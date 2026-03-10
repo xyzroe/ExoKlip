@@ -1,0 +1,15 @@
+[Unit]
+Description=Socat Bridge Web Monitor (Klipper)
+After=network.target
+
+[Service]
+# Edit --ports to add/remove bridges — no code changes needed.
+# Convention: port 700X bridges to ttyS<X> on server, ttyV<X> on client.
+ExecStart=/usr/bin/python3 /opt/bridge-monitor/bridge_monitor.py --ports 7002,7004,7005,7007
+Restart=always
+RestartSec=5
+User=root
+WorkingDirectory=/opt/bridge-monitor
+
+[Install]
+WantedBy=multi-user.target

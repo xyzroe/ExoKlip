@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ExoKlip</title>
+<link rel="icon" type="image/png" href="/favicon/favicon-96x96.png" sizes="96x96" />
+<link rel="icon" type="image/svg+xml" href="/favicon/favicon.svg" />
+<link rel="shortcut icon" href="/favicon/favicon.ico" />
+<link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-title" content="ExoKlip" />
+<link rel="manifest" href="/favicon/site.webmanifest" />
+<link rel="stylesheet" href="style.css">
+<script src="langs/en.js"></script>
+<script src="langs/ru.js"></script>
+<script src="langs/uk.js"></script>
+<script src="langs/de.js"></script>
+<script src="langs/pt.js"></script>
+<script src="langs/cs.js"></script>
+<script src="i18n.js"></script>
+</head>
+<body>
+<!-- Language selector -->
+<div id="lang-selector">
+  <select id="lang-select" onchange="i18n.setLang(this.value)" title="Language">
+    <option value="en">🇬🇧 EN</option>
+    <option value="ru">🇷🇺 RU</option>
+    <option value="uk">🇺🇦 UK</option>
+    <option value="de">🇩🇪 DE</option>
+    <option value="pt">🇵🇹 PT</option>
+    <option value="cs">🇨🇿 CS</option>
+  </select>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- Log modal -->
+<div id="logmodal"><div class="modal-box">
+  <div class="modal-title">
+    <span id="log-title">Log</span>
+    <span class="close-btn" onclick="closeLog()" title="Close (Esc)">✕</span>
+  </div>
+  <pre id="log-content" data-i18n="loading">Loading…</pre>
+</div></div>
+
+<!-- Ports modal -->
+<div id="portsmodal"><div class="modal-box">
+  <div class="modal-title">
+    <span>&#9881; <span data-i18n="modal_port_settings">Port Settings</span></span>
+    <span class="close-btn" onclick="closePortsModal()" data-i18n-title="close_esc" title="Close (Esc)">✕</span>
+  </div>
+  <div class="modal-hint" data-i18n="modal_port_hint">shared — applies to client &amp; server on save</div>
+  <table>
+    <thead><tr><th data-i18n="th_tcp_port">TCP Port</th><th data-i18n="th_enabled">Enabled</th><th></th></tr></thead>
+    <tbody id="ports-rows"></tbody>
+    <tfoot><tr>
+      <td><input class="port-input" id="new-port" type="number" min="1024" max="65535" data-i18n-placeholder="ph_port" placeholder="port"></td>
+      <td class="col-center"><input type="checkbox" id="new-en" checked></td>
+      <td><button class="btn btn-start" onclick="portsAddRow()" data-i18n="btn_add">+ Add</button></td>
+    </tr></tfoot>
+  </table>
+  <div class="modal-actions">
+    <button class="btn btn-restart" onclick="portsSave()" data-i18n="btn_save_apply_both" data-i18n-title="save_enter" title="Save (Enter)">✓ Save &amp; apply both</button>
+    <span id="ports-save-status" class="save-status"></span>
+  </div>
+</div></div>
+
+<!-- Client services modal -->
+<div id="csvc-modal"><div class="modal-box">
+  <div class="modal-title">
+    <span>&#9881; <span data-i18n="modal_client_svcs">Client Services</span></span>
+    <span class="close-btn" onclick="closeCsvcModal()" data-i18n-title="close_esc" title="Close (Esc)">✕</span>
+  </div>
+  <div class="modal-hint" data-i18n="modal_client_svcs_hint">systemd units monitored on the host</div>
+  <div class="svc-cfg-wrap"><table>
+    <thead><tr><th data-i18n="th_name">Name</th><th data-i18n="th_systemd_unit">Systemd Unit</th><th></th></tr></thead>
+    <tbody id="csvc-rows"></tbody>
+    <tfoot><tr>
+      <td><input class="svc-input" id="csvc-new-name" data-i18n-placeholder="ph_name" placeholder="name"></td>
+      <td><input class="svc-input" id="csvc-new-unit" data-i18n-placeholder="ph_unit" placeholder="unit.service"></td>
+      <td><button class="btn btn-start" onclick="csvcAddRow()" data-i18n="btn_add">+ Add</button></td>
+    </tr></tfoot>
+  </table></div>
+  <div class="modal-actions">
+    <button class="btn btn-restart" onclick="csvcSave()" data-i18n="btn_save" data-i18n-title="save_enter" title="Save (Enter)">✓ Save</button>
+    <span id="csvc-save-status" class="save-status"></span>
+  </div>
+</div></div>
+
+<!-- Server services modal -->
+<div id="ssvc-modal"><div class="modal-box">
+  <div class="modal-title">
+    <span>&#9881; <span data-i18n="modal_server_svcs">Server Services</span></span>
+    <span class="close-btn" onclick="closeSsvcModal()" data-i18n-title="close_esc" title="Close (Esc)">✕</span>
+  </div>
+  <div class="modal-hint" data-i18n="modal_server_svcs_hint">S-scripts on the printer</div>
+  <div id="ssvc-list" class="ssvc-list"></div>
+  <div class="modal-actions">
+    <button class="btn btn-start" onclick="ssvcAddNew()" data-i18n="btn_add">+ Add</button>
+    <button class="btn btn-restart" onclick="ssvcSave()" data-i18n="btn_save" data-i18n-title="save_enter" title="Save (Enter)">✓ Save</button>
+    <span id="ssvc-save-status" class="save-status"></span>
+  </div>
+</div></div>
+
+<!-- TCP Forwards modal -->
+<div id="tcpfwd-modal"><div class="modal-box">
+  <div class="modal-title">
+    <span>&#x1F500; <span data-i18n="modal_tcp_fwds">TCP Port Forwards</span></span>
+    <span class="close-btn" onclick="closeTcpFwdModal()" data-i18n-title="close_esc" title="Close (Esc)">&#x2715;</span>
+  </div>
+  <div class="modal-hint">socat on printer: TCP-LISTEN:{src} &rarr; <b id="tcpfwd-host">192.168.100.2</b>:{dst}</div>
+  <div class="svc-cfg-wrap"><table>
+    <thead><tr><th data-i18n="th_name">Name</th><th data-i18n="th_src_port">Src port</th><th data-i18n="th_dst_port">Dst port</th><th class="col-center" data-i18n="th_en">En</th><th class="col-center" data-i18n="th_local" data-i18n-title="tip_keep_local" title="Keep running in Local mode">🔒 Local</th><th></th></tr></thead>
+    <tbody id="tcpfwd-rows"></tbody>
+    <tfoot><tr>
+      <td><input class="svc-input" id="tcpfwd-new-name" data-i18n-placeholder="ph_name" placeholder="name"></td>
+      <td><input class="svc-input" id="tcpfwd-new-src" type="number" min="1024" max="65535" placeholder="src"></td>
+      <td><input class="svc-input" id="tcpfwd-new-dst" type="number" min="1024" max="65535" placeholder="dst"></td>
+      <td class="col-center"><input type="checkbox" id="tcpfwd-new-en" checked></td>
+      <td class="col-center"><input type="checkbox" id="tcpfwd-new-local" data-i18n-title="tip_keep_local" title="Keep running in Local mode"></td>
+      <td><button class="btn btn-start" onclick="tcpFwdAddRow()" data-i18n="btn_add">+ Add</button></td>
+    </tr></tfoot>
+  </table></div>
+  <div class="modal-actions">
+    <button class="btn btn-restart" onclick="tcpFwdSave()" data-i18n="btn_save_apply" data-i18n-title="save_enter" title="Save (Enter)">✓ Save &amp; apply</button>
+    <span id="tcpfwd-save-status" class="save-status"></span>
+  </div>
+</div></div>
+
+<h1>🔗 <span class="grad-text">ExoKlip</span></h1>
+
+<div class="stats">
+  <div class="stat"><div class="num" id="st-conn">—</div><div class="lbl" data-i18n="lbl_connected">Connected</div></div>
+  <div class="stat"><div class="num" id="st-clients">—</div><div class="lbl" data-i18n="lbl_clients_active">Clients active</div></div>
+  <div class="stat"><div class="num" id="st-servers">—</div><div class="lbl" data-i18n="lbl_server_bridges">Server bridges</div></div>
+  <div class="stat"><div class="num" id="st-updated">—</div><div class="lbl" data-i18n="lbl_updated">Updated</div></div>
+  <div class="stat stat-mode" id="stat-mode-card">
+    <div class="num stat-mode-icon" id="st-mode-icon">—</div>
+    <div class="lbl" id="st-mode-lbl" data-i18n="lbl_mode">Mode</div>
+  </div>
+  <div class="stat stat-mode-btn mode-bar" id="mode-bar">
+    <div id="mode-btn-wrap"></div>
+  </div>
+</div>
+
+<div class="grid">
+
+  <!-- ── HOST CARD ── -->
+  <div class="card" id="client-card">
+    <h2>📡 HOST <span class="tag" id="client-tag">…</span>
+      <a href="#" class="card-action-log" onclick="openLog('client-action','','');return false" data-i18n="lnk_action_log">action log</a></h2>
+    <div class="api-err" id="client-api-err-block" data-i18n="err_host_api">⚠ Host API unavailable</div>
+    <div class="uptime-bar" id="client-uptime">…</div>
+    <div class="card-section-title">🔌 <span data-i18n="sec_uart_bridges">UART Bridges</span><span class="section-btns">
+      <button class="btn btn-start"   onclick="clientAllAction('start')" data-i18n="btn_start_all">▶ Start all</button>
+      <button class="btn btn-stop"    onclick="clientAllAction('stop')" data-i18n="btn_stop_all">■ Stop all</button>
+      <button class="btn btn-restart" onclick="clientAllAction('restart')" data-i18n="btn_restart_all">↺ Restart all</button>
+    </span></div>
+    <table>
+      <tr><th data-i18n="th_port">Port</th><th class="col-pty" data-i18n="th_pty">PTY</th><th class="col-center"><span class="st-full" data-i18n="th_status">Status</span><span class="st-short" data-i18n="th_status_short">St</span></th><th class="col-center" data-i18n="th_pid">PID</th><th class="col-center" data-i18n="th_since">Since</th><th data-i18n="th_conn">Conn</th><th class="col-center" data-i18n="th_control">Control</th><th data-i18n="th_log">Log</th></tr>
+      <tbody id="client-rows"><tr><td colspan="8" class="muted" data-i18n="loading">Loading…</td></tr></tbody>
+    </table>
+    <div class="embed-chips" id="client-embed-bridges"></div>
+    <div class="card-section-title">⚙️ <span data-i18n="sec_services">Services</span></div>
+    <table>
+      <tr><th data-i18n="th_service">Service</th><th class="col-center"><span class="st-full" data-i18n="th_status">Status</span><span class="st-short" data-i18n="th_status_short">St</span></th><th class="col-center" data-i18n="th_pid">PID</th><th class="col-center" data-i18n="th_since">Since</th><th class="col-center" data-i18n="th_control">Control</th><th data-i18n="th_log">Log</th></tr>
+      <tbody id="client-svc-rows"><tr><td colspan="6" class="muted" data-i18n="loading">Loading…</td></tr></tbody>
+    </table>
+    <div class="embed-chips" id="client-embed-svcs"></div>
+  </div>
+
+  <!-- ── PRINTER CARD ── -->
+  <div class="card" id="server-card">
+    <h2>🖨 PRINTER <span class="tag" id="server-tag">…</span>
+      <a href="#" class="card-action-log" onclick="openLog('action','','');return false" data-i18n="lnk_action_log">action log</a></h2>
+    <div class="api-err" id="api-err-block" data-i18n="err_printer_api">⚠ Printer API unavailable</div>
+    <div class="uptime-bar" id="server-uptime">…</div>
+    <div class="card-section-title">🔌 <span data-i18n="sec_uart_bridges">UART Bridges</span><span class="section-btns">
+      <button class="btn btn-start"   onclick="serverAction('start-bridges')" data-i18n="btn_start_all">▶ Start all</button>
+      <button class="btn btn-stop"    onclick="serverAction('stop-bridges')" data-i18n="btn_stop_all">■ Stop all</button>
+      <button class="btn btn-restart" onclick="serverAction('restart-bridges')" data-i18n="btn_restart_all">↺ Restart all</button>
+    </span></div>
+    <table>
+      <tr><th data-i18n="th_port">Port</th><th class="col-pty" data-i18n="th_pty">PTY</th><th class="col-center"><span class="st-full" data-i18n="th_status">Status</span><span class="st-short" data-i18n="th_status_short">St</span></th><th class="col-center" data-i18n="th_pid">PID</th><th class="col-center" data-i18n="th_since">Since</th><th data-i18n="th_conn">Conn</th><th class="col-center" data-i18n="th_control">Control</th><th data-i18n="th_log">Log</th></tr>
+      <tbody id="server-rows"><tr><td colspan="8" class="muted" data-i18n="loading">Loading…</td></tr></tbody>
+    </table>
+    <div class="embed-chips" id="server-embed-bridges"></div>
+    <div id="tcpfwd-status-section" style="display:none">
+      <div class="card-section-title">🔀 <span data-i18n="sec_tcp_forwards">TCP Forwards</span><span class="section-btns">
+        <button class="btn btn-start"   onclick="serverAction('start-tcpfwds-all')" data-i18n="btn_start_all">▶ Start all</button>
+        <button class="btn btn-stop"    onclick="serverAction('stop-tcpfwds-all')" data-i18n="btn_stop_all">■ Stop all</button>
+        <button class="btn btn-restart" onclick="serverAction('restart-tcpfwds-all')" data-i18n="btn_restart_all">↺ Restart all</button>
+      </span></div>
+      <table>
+        <tr><th data-i18n="th_forward">Forward</th><th data-i18n="th_src_dst">Src&#8594;Dst</th><th class="col-center"><span class="st-full" data-i18n="th_status">Status</span><span class="st-short" data-i18n="th_status_short">St</span></th><th class="col-center" data-i18n="th_pid">PID</th><th class="col-center" data-i18n="th_since">Since</th><th data-i18n="th_conn">Conn</th><th class="col-center" data-i18n="th_control">Control</th><th data-i18n="th_log">Log</th></tr>
+        <tbody id="tcpfwd-status-rows"></tbody>
+      </table>
+      <div class="embed-chips" id="server-embed-tcpfwds"></div>
+    </div>
+    <div class="card-section-title">⚙️ <span data-i18n="sec_services">Services</span></div>
+    <table>
+      <tr><th data-i18n="th_service">Service</th><th class="col-center"><span class="st-full" data-i18n="th_status">Status</span><span class="st-short" data-i18n="th_status_short">St</span></th><th class="col-center" data-i18n="th_pid">PID</th><th class="col-center" data-i18n="th_since">Since</th><th class="col-center" data-i18n="th_control">Control</th><th data-i18n="th_log">Log</th></tr>
+      <tbody id="server-svc-rows"><tr><td colspan="6" class="muted" data-i18n="loading">Loading…</td></tr></tbody>
+    </table>
+    <div class="embed-chips" id="server-embed-svcs"></div>
+  </div>
+</div>
+
+<div class="cfg-bar">
+  <button class="btn btn-cfg-ports"   onclick="openPortsModal()">&#x1F50C; <span data-i18n="btn_cfg_ports">Ports</span></button>
+  <button class="btn btn-cfg-tcpfwd"  onclick="openTcpFwdModal()">&#x1F500; <span data-i18n="btn_cfg_tcp_fwds">TCP Forwards</span></button>
+  <button class="btn btn-cfg-host"    onclick="openCsvcModal()">&#x1F4E1; <span data-i18n="btn_cfg_host_svcs">Host services</span></button>
+  <button class="btn btn-cfg-printer" onclick="openSsvcModal()">&#x1F5A8; <span data-i18n="btn_cfg_printer_svcs">Printer services</span></button>
+
+</div>
+
+<div class="footer">
+  <div><span data-i18n="footer_created">Created with ❤️ by</span> <a href="https://github.com/xyzroe" target="_blank">xyzroe</a> &mdash; <span data-i18n="footer_special">special for</span> <a href="https://zmod.link" target="_blank">zMod</a></div>
+  <div class="footer-ver"><span data-i18n="footer_web">web</span> <span id="ver-web">…</span> &nbsp;·&nbsp; <span data-i18n="footer_host">host</span> <span id="ver-client">…</span> &nbsp;·&nbsp; <span data-i18n="footer_printer">printer</span> <span id="ver-server">…</span></div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+#!/bin/sh
+# S55bridge-api — Socat Bridge API Server (auto-start on printer boot)
+# Persistent path: /opt/config/mod/.shell/root/S55bridge-api
+#
+# Edit BRIDGE_PORTS here to add/remove bridges — no code changes needed.
+# Convention: port 700X listens and bridges to /dev/ttyS<X>.
+
+API=/usr/data/config/mod_data/bridge-api/printer_api.py
+PYTHON=/usr/prog/Python-3.8.2/bin/python3
+export LD_LIBRARY_PATH=/usr/prog/Python-3.8.2/lib:/usr/prog/openssl-1.0.2d/lib
+export BRIDGE_PORTS="7002,7004,7005,7007"
+
+case "$1" in
+    start)
+        nohup $PYTHON $API > /tmp/bridge-api.log 2>&1 &
+        echo $! > /run/bridge-api.pid
+        echo "[bridge-api] started PID=$(cat /run/bridge-api.pid) BRIDGE_PORTS=$BRIDGE_PORTS"
+        ;;
+    stop)
+        if [ -f /run/bridge-api.pid ]; then
+            kill $(cat /run/bridge-api.pid) 2>/dev/null || true
+            rm -f /run/bridge-api.pid
+        fi
+        echo "[bridge-api] stopped"
+        ;;
+    restart)
+        $0 stop; sleep 1; $0 start
+        ;;
+    status)
+        if [ -f /run/bridge-api.pid ] && kill -0 $(cat /run/bridge-api.pid) 2>/dev/null; then
+            echo "[bridge-api] running PID=$(cat /run/bridge-api.pid)"
+        else
+            echo "[bridge-api] not running"
+        fi
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart|status}"
+        ;;
+esac
