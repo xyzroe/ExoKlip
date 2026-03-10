@@ -1,4 +1,8 @@
-# debian_config
+# ExoKlip
+
+A bridge monitor and web UI for running Klipper, Moonraker and Fluidd on a separate ARM host (Odroid XU4) while the AD5X printer acts as a pure UART bridge. Serial ports of the printer are tunnelled over TCP using `socat` and appear as virtual ports (`/dev/ttyVx`) on the Odroid side.
+
+The web UI provides a real-time dashboard for bridge status, systemd service control, operating mode switching (remote / local), action logs and syslog. Supports 6 languages with a built-in i18n engine (no external dependencies).
 
 Files deployed to the **Odroid XU4** (ARM / Armbian / Debian) host and to the **AD5X printer** (MIPS).
 
