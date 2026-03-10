@@ -6,6 +6,10 @@ The web UI provides a real-time dashboard for bridge status, systemd service con
 
 Files deployed to the **Odroid XU4** (ARM / Armbian / Debian) host and to the **AD5X printer** (MIPS).
 
+![Web UI](images/web_page.png)
+
+![Fluidd camera](images/fluidd_camera.png)
+
 ---
 
 ## Files
